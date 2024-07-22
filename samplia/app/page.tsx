@@ -87,71 +87,68 @@ export default function Index() {
         </div>
       </nav>
 
-      <div className="flex-1 flex flex-col  max-w-4xl px-3">
+      <div className="flex-1 flex flex-col w-full max-w-4xl px-3">
         <Header />
         <main className="flex-1 flex flex-col gap-6">
-        <Map
-        style={{ width: 800, height: 600 }}
-        
-        initialViewState={{
-          longitude: -3.7038,  // Madrid's longitude
-          latitude: 40.4168,   // Madrid's latitude
-          zoom: 11             // Adjust zoom level as needed
-        }}
-        maxBounds={[
-          
-          [-3.949585,40.267476],  // Southwest coordinates
-          [-3.251266,40.611867]   // Northeast coordinates
-        ]}
-        mapStyle={{
-          version: 8,
-          glyphs:
-            'https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf',
-          sources: {
-            protomaps: {
-              attribution:
-                '<a href="https://github.com/protomaps/basemaps">Protomaps</a> © <a href="https://openstreetmap.org">OpenStreetMap</a>',
-              type: 'vector',
-              url: 'pmtiles://https://ndzndxkibueqnrwarjlu.supabase.co/storage/v1/object/public/madrid/madrid.pmtiles?t=2024-07-22T12%3A02%3A02.740Z',
+        <div className="w-full h-[70vh] md:h-[80vh] lg:h-[600px] rounded-lg overflow-hidden">
+          <Map
+          style={{ width: '100%', height: '100%' }}
+          initialViewState={{
+            longitude: -3.7038,  // Madrid's longitude
+            latitude: 40.4168,   // Madrid's latitude
+            zoom: 11             // Adjust zoom level as needed
+          }}
+          maxBounds={[
+            
+            [-3.949585,40.267476],  // Southwest coordinates
+            [-3.251266,40.611867]   // Northeast coordinates
+          ]}
+          mapStyle={{
+            version: 8,
+            glyphs:
+              'https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf',
+            sources: {
+              protomaps: {
+                attribution:
+                  '<a href="https://github.com/protomaps/basemaps">Protomaps</a> © <a href="https://openstreetmap.org">OpenStreetMap</a>',
+                type: 'vector',
+                url: 'pmtiles://https://ndzndxkibueqnrwarjlu.supabase.co/storage/v1/object/public/madrid/madrid.pmtiles?t=2024-07-22T12%3A02%3A02.740Z',
+              },
             },
-          },
+            // @ts-ignore
+            layers: layers('protomaps', 'light'),
+          }}
           // @ts-ignore
-          layers: layers('protomaps', 'light'),
-        }}
-        // @ts-ignore
-        mapLib={maplibregl}
-        >
-          {points.map((point) => (
-            <Marker 
-              key={point.id} 
-              longitude={point.longitude} 
-              latitude={point.latitude} 
-              color={point.capacity < 15 ? "red" : "blue"} 
-              onClick={() => handleMarkerClick(point)}   
-            >
-              <CustomMarker onClick={() => handleMarkerClick(point)} />
-            </Marker>
-          ))}
-          
-          {selectedPoint && (
-            <Popup
-              longitude={selectedPoint.longitude}
-              latitude={selectedPoint.latitude}
-              onClose={() => setSelectedPoint(null)}
-              closeOnClick={false}
-            >
-              <div>
-                <h3 className="font-bold">{selectedPoint.name}</h3>
-                <p>{selectedPoint.address}</p>
-                <p className={getCapacityColor(selectedPoint.capacity)}>
-                  Capacity: {selectedPoint.capacity}%
-                </p>
-              </div>
-            </Popup>
-          )}
-        </Map>
-
-    
+          mapLib={maplibregl}
+          >
+            {points.map((point) => (
+              <Marker 
+                key={point.id} 
+                longitude={point.longitude} 
+                latitude={point.latitude}
+              >
+                <CustomMarker onClick={() => handleMarkerClick(point)} />
+              </Marker>
+            ))}
+            
+            {selectedPoint && (
+              <Popup
+                longitude={selectedPoint.longitude}
+                latitude={selectedPoint.latitude}
+                onClose={() => setSelectedPoint(null)}
+                closeOnClick={false}
+              >
+                <div>
+                  <h3 className="font-bold">{selectedPoint.name}</h3>
+                  <p>{selectedPoint.address}</p>
+                  <p className={getCapacityColor(selectedPoint.capacity)}>
+                    Capacity: {selectedPoint.capacity}%
+                  </p>
+                </div>
+              </Popup>
+            )}
+          </Map>
+        </div>
 
         </main>
       </div>
