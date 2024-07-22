@@ -24,7 +24,15 @@ export default function Index() {
     longitude: number;
     capacity: number;
   }
+  interface Delivery {
+    id: number,
+    name: string,
+    latitude: number,
+    longitude: number,
+  }
   const [points, setPoints] = useState<Point[]>([])
+  const [delivery, setDelivery] = useState<Delivery[]>([])
+  const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
   const supabase = createClient()
  
   useEffect(() => {
@@ -55,7 +63,25 @@ export default function Index() {
           setPoints(formattedPoints);
         }
       })
-      
+      supabase.from('delivery_location').select(`unit, delivery_unit(name), location`).then(({data, error}) => {
+        if (error) {
+          console.error("Error fetching data:", error);
+        } else {
+          console.log("Delivery data:", data)
+          const formattedDelivery = data?.map(delivery => {
+            const geometry = wkx.Geometry.parse(Buffer.from(delivery.location, 'hex')) as wkx.Point;
+            return {
+              ...delivery,
+              id: delivery.unit,
+              name: delivery.delivery_unit.name,
+              capacity: delivery.unit,
+              longitude: geometry.x,
+              latitude: geometry.y
+            };
+          }) || [];
+          setDelivery(formattedDelivery);
+        }
+      })
 }, []);
 
   const [selectedPoint, setSelectedPoint] = useState<Point | null>(null);
@@ -64,17 +90,21 @@ export default function Index() {
     setSelectedPoint(point);
   };
 
+  const handleDeliveryClick = (delivery: Delivery) => {
+    setSelectedDelivery(delivery);
+  };
+
   const getCapacityColor = (capacity: number) => {
     return capacity < 15 ? 'text-red-500 font-bold' : 'text-green-500';
   };
 
-  const CustomMarker = ({ onClick }: { onClick: () => void }) => (
+  const CustomMarker = ({ onClick, isDelivery }: { onClick: () => void, isDelivery: boolean }) => (
     <div onClick={onClick} className="cursor-pointer">
       <Image
-        src="/samplia_logo.png"
+        src={isDelivery ? "/truck.svg" : "/samplia_logo.png"}
         width={30}
         height={30}
-        alt="Marker"
+        alt={isDelivery ? "Delivery Marker" : "Point Marker"}
       />
     </div>
   );
@@ -127,7 +157,7 @@ export default function Index() {
                 longitude={point.longitude} 
                 latitude={point.latitude}
               >
-                <CustomMarker onClick={() => handleMarkerClick(point)} />
+                <CustomMarker onClick={() => handleMarkerClick(point)} isDelivery={false} />
               </Marker>
             ))}
             
@@ -144,6 +174,27 @@ export default function Index() {
                   <p className={getCapacityColor(selectedPoint.capacity)}>
                     Capacity: {selectedPoint.capacity}%
                   </p>
+                </div>
+              </Popup>
+            )}
+            {delivery.map((del) => (
+              <Marker 
+                key={del.id} 
+                longitude={del.longitude} 
+                latitude={del.latitude}
+              >
+                <CustomMarker onClick={() => handleDeliveryClick(del)} isDelivery={true} />
+              </Marker>
+            ))}
+            {selectedDelivery && (
+              <Popup
+                longitude={selectedDelivery.longitude}
+                latitude={selectedDelivery.latitude}
+                onClose={() => setSelectedDelivery(null)}
+                closeOnClick={false}
+              >
+                <div>
+                  <h3 className="font-bold">{selectedDelivery.name}</h3>
                 </div>
               </Popup>
             )}
