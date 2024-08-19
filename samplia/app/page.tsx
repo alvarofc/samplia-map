@@ -16,7 +16,6 @@ import wkx from 'wkx';
 export default function Index() {
 
   interface Point {
-    
     id: number;
     name: string;
     address: string;
@@ -33,6 +32,7 @@ export default function Index() {
   const [points, setPoints] = useState<Point[]>([])
   const [delivery, setDelivery] = useState<Delivery[]>([])
   const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
+  const [selectedPointId, setSelectedPointId] = useState<number | null>(null);
   const supabase = createClient()
  
   useEffect(() => {
@@ -42,11 +42,13 @@ export default function Index() {
       maplibregl.removeProtocol('pmtiles')
     }
 
+
+
     
   }, [])
 
   useEffect(() => {
-    console.log("Fetching data")
+    console.log("Fetching points")
       supabase.from('points').select('*').then(({data, error}) => {
         if (error) {
           console.error("Error fetching data:", error);
@@ -57,12 +59,17 @@ export default function Index() {
             return {
               ...point,
               longitude: geometry.x,
-              latitude: geometry.y
+              latitude: geometry.y,
+              capacity: point.capacity
             };
           }) || [];
           setPoints(formattedPoints);
         }
       })
+
+      
+
+
       supabase.from('delivery_location').select(`unit, delivery_unit(name), location`).then(({data, error}) => {
         if (error) {
           console.error("Error fetching data:", error);
@@ -82,12 +89,68 @@ export default function Index() {
           setDelivery(formattedDelivery);
         }
       })
+
+      const subs = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'delivery_location',
+        },
+        (payload) => {
+          
+
+          const geometry = wkx.Geometry.parse(Buffer.from(payload.new.location, 'hex')) as wkx.Point;
+
+          setDelivery(prevDeliveries => prevDeliveries.map(prevDelivery => {
+            if (prevDelivery.id === payload.new.id) {
+              return {
+                ...prevDelivery,
+                longitude: geometry.x,
+                latitude: geometry.y
+              };
+            }
+            return prevDelivery;
+          }));
+          
+
+        
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'points',
+        },
+        (payload) => {
+          
+          setPoints(prevPoints => prevPoints.map(prevPoint => {
+            if (prevPoint.id === payload.new.id) {
+              return {
+                ...prevPoint,
+                capacity: payload.new.capacity
+              };
+            }
+            return prevPoint;
+          })); 
+        }
+      )
+      .subscribe()
+    
+
+    return () => {
+      subs.unsubscribe()
+      
+    }
+      
 }, []);
 
-  const [selectedPoint, setSelectedPoint] = useState<Point | null>(null);
-
   const handleMarkerClick = (point: Point) => {
-    setSelectedPoint(point);
+    setSelectedPointId(point.id);
   };
 
   const handleDeliveryClick = (delivery: Delivery) => {
@@ -161,19 +224,29 @@ export default function Index() {
               </Marker>
             ))}
             
-            {selectedPoint && (
+            {selectedPointId && (
               <Popup
-                longitude={selectedPoint.longitude}
-                latitude={selectedPoint.latitude}
-                onClose={() => setSelectedPoint(null)}
+                longitude={points.find(p => p.id === selectedPointId)?.longitude || 0}
+                latitude={points.find(p => p.id === selectedPointId)?.latitude || 0}
+                onClose={() => setSelectedPointId(null)}
                 closeOnClick={false}
+                closeButton={false}
+                anchor="bottom"
+                offset={[0, -15]}
+                className="bg-transparent shadow-none"
               >
-                <div>
-                  <h3 className="font-bold">{selectedPoint.name}</h3>
-                  <p>{selectedPoint.address}</p>
-                  <p className={getCapacityColor(selectedPoint.capacity)}>
-                    Capacity: {selectedPoint.capacity}%
+                <div className="bg-white/90 p-4 rounded-lg max-w-[200px] backdrop-blur-sm">
+                  <h3 className="font-bold text-lg mb-2">{points.find(p => p.id === selectedPointId)?.name || ''}</h3>
+                  <p className="text-sm mb-2">{points.find(p => p.id === selectedPointId)?.address || ''}</p>
+                  <p className={`text-sm ${getCapacityColor(points.find(p => p.id === selectedPointId)?.capacity || 0)}`}>
+                    Capacity: {points.find(p => p.id === selectedPointId)?.capacity || 0}%
                   </p>
+                  <button 
+                    className="mt-3 text-xs text-blue-500 hover:text-blue-700"
+                    onClick={() => setSelectedPointId(null)}
+                  >
+                    Close
+                  </button>
                 </div>
               </Popup>
             )}
@@ -192,9 +265,20 @@ export default function Index() {
                 latitude={selectedDelivery.latitude}
                 onClose={() => setSelectedDelivery(null)}
                 closeOnClick={false}
+                closeButton={false}
+                anchor="bottom"
+                offset={[0, -15]}
+                className="bg-transparent shadow-none"
               >
-                <div>
-                  <h3 className="font-bold">{selectedDelivery.name}</h3>
+                <div className="bg-white/90 p-4 rounded-lg max-w-[200px] backdrop-blur-sm">
+                  <h3 className="font-bold text-lg mb-2">{selectedDelivery.name}</h3>
+                  <p className="text-sm">Delivery Unit ID: {selectedDelivery.id}</p>
+                  <button 
+                    className="mt-3 text-xs text-blue-500 hover:text-blue-700"
+                    onClick={() => setSelectedDelivery(null)}
+                  >
+                    Close
+                  </button>
                 </div>
               </Popup>
             )}
