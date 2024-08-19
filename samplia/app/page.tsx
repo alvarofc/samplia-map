@@ -78,9 +78,8 @@ export default function Index() {
           const formattedDelivery = data?.map(delivery => {
             const geometry = wkx.Geometry.parse(Buffer.from(delivery.location, 'hex')) as wkx.Point;
             return {
-              ...delivery,
               id: delivery.unit,
-              name: delivery.delivery_unit.name,
+              name: (delivery.delivery_unit as any).name,
               capacity: delivery.unit,
               longitude: geometry.x,
               latitude: geometry.y
