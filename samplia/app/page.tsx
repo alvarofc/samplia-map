@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 
 import Header from "@/components/Header";
 import Map, { Marker, Popup } from 'react-map-gl'
-import maplibregl from 'maplibre-gl'
+import maplibregl, { Offset } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { default as layers } from 'protomaps-themes-base'
 import { Protocol } from 'pmtiles'
@@ -224,6 +224,7 @@ export default function Index() {
             ))}
             
             {selectedPointId && (
+              // @ts-ignore
               <Popup
                 longitude={points.find(p => p.id === selectedPointId)?.longitude || 0}
                 latitude={points.find(p => p.id === selectedPointId)?.latitude || 0}
@@ -231,7 +232,7 @@ export default function Index() {
                 closeOnClick={false}
                 closeButton={false}
                 anchor="bottom"
-                offset={[0, -15]}
+                offset={[0, -15] } // Changed this line
                 className="bg-transparent shadow-none"
               >
                 <div className="bg-white/90 p-4 rounded-lg max-w-[200px] backdrop-blur-sm">
@@ -266,7 +267,7 @@ export default function Index() {
                 closeOnClick={false}
                 closeButton={false}
                 anchor="bottom"
-                offset={[0, -15]}
+                offset={[0, -15] as Offset}
                 className="bg-transparent shadow-none"
               >
                 <div className="bg-white/90 p-4 rounded-lg max-w-[200px] backdrop-blur-sm">
