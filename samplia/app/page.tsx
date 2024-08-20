@@ -3,6 +3,8 @@ import Image from "next/image";
 import Samplia from "./../components/Samplia.svg"
 import { createClient } from "@/utils/supabase/client";
 
+
+
 import Header from "@/components/Header";
 import Map, { Marker, Popup } from 'react-map-gl'
 import maplibregl, { Offset } from 'maplibre-gl'
@@ -11,6 +13,8 @@ import { default as layers } from 'protomaps-themes-base'
 import { Protocol } from 'pmtiles'
 import { useEffect, useState } from "react";
 import wkx from 'wkx';
+let mapUrl = process.env.SUPABASE_MAP_URL;
+console.log("Map URL:", mapUrl)
 
 
 export default function Index() {
@@ -204,7 +208,7 @@ export default function Index() {
                 attribution:
                   '<a href="https://github.com/protomaps/basemaps">Protomaps</a> © <a href="https://openstreetmap.org">OpenStreetMap</a>',
                 type: 'vector',
-                url: 'pmtiles://https://ndzndxkibueqnrwarjlu.supabase.co/storage/v1/object/public/madrid/madrid.pmtiles?t=2024-07-22T12%3A02%3A02.740Z',
+                url: `pmtiles://${mapUrl}`,
               },
             },
             // @ts-ignore
